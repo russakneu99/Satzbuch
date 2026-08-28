@@ -348,6 +348,7 @@
   .chart-card .chart-latest { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
   .chart-card svg { width: 100%; height: auto; display: block; }
   .chart-card .axis-label { font-size: 9px; fill: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+  .chart-card .bar-label { font-size: 9.5px; font-weight: 600; fill: var(--ink-soft); font-family: 'IBM Plex Mono', monospace; }
 
   /* --- Manage --- */
   .form-row { display: flex; gap: 8px; }
@@ -711,10 +712,10 @@
 
     if (ex.type === "counter") {
       var bestTotal = Math.max.apply(null, entries.map(function(e){ return e.total; }));
-      var totalAll = entries.reduce(function(s,e){ return s + e.total; }, 0);
+      var bestDay = bestDayTotal(ex.id);
       html += '<div class="pr-grid two">' +
         prCard(bestTotal, "Wdh.", "Bester Satz") +
-        prCard(totalAll, "Wdh.", "Insgesamt geloggt") +
+        prCard(bestDay, "Wdh.", "Bester Tag") +
         '</div>';
     } else {
       var bestW = Math.max.apply(null, entries.map(maxWeightOf));
@@ -735,6 +736,17 @@
   function prCard(val, unit, label){
     return '<div class="card pr-card"><div class="pr-val">'+val+'</div><div class="pr-unit">'+unit+'</div>' +
       '<div class="pr-label">'+label+'</div></div>';
+  }
+
+  function bestDayTotal(exId){
+    var byDay = {};
+    entriesFor(exId).forEach(function(e){
+      var d = new Date(e.date);
+      var key = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+      byDay[key] = (byDay[key] || 0) + volumeOf(e);
+    });
+    var vals = Object.keys(byDay).map(function(k){ return byDay[k]; });
+    return vals.length ? Math.max.apply(null, vals) : 0;
   }
 
   function isSameMonth(a, b){
@@ -764,28 +776,31 @@
     var activeDays = dayVals.filter(function(v){ return v > 0; }).length;
     var todayDay = isSameMonth(monthDate, today) ? today.getDate() : null;
 
-    var w = 400, h = 150, pad = 8, baseline = 18;
-    var plotH = h - pad - baseline;
+    var w = 400, h = 162, padTop = 20, padSide = 8, baseline = 18;
+    var plotH = h - padTop - baseline;
     var barGap = 2;
-    var barW = (w - pad * 2) / dim - barGap;
-    var bars = "";
+    var barW = (w - padSide * 2) / dim - barGap;
+    var bars = "", valueLabels = "";
     for (var d = 1; d <= dim; d++) {
       var v = perDay[d];
       var bh = v > 0 ? Math.max((v / max) * plotH, 2.5) : 1;
-      var x = pad + (d - 1) * (barW + barGap);
-      var yTop = pad + (plotH - bh);
+      var x = padSide + (d - 1) * (barW + barGap);
+      var yTop = padTop + (plotH - bh);
       var isToday = d === todayDay;
       var fill = v > 0 ? (isToday ? "var(--ember)" : "var(--accent)") : "var(--border)";
       bars += '<rect x="'+x.toFixed(1)+'" y="'+yTop.toFixed(1)+'" width="'+Math.max(barW,0.5).toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1.5" fill="'+fill+'"/>';
+      if (v > 0) {
+        valueLabels += '<text x="'+(x+barW/2).toFixed(1)+'" y="'+(yTop-4).toFixed(1)+'" text-anchor="middle" class="bar-label">'+v+'</text>';
+      }
     }
     var labelDays = [1, Math.round(dim/2), dim];
     var axisLabels = labelDays.map(function(d){
-      var x = pad + (d - 1) * (barW + barGap) + barW/2;
+      var x = padSide + (d - 1) * (barW + barGap) + barW/2;
       return '<text x="'+x.toFixed(1)+'" y="'+(h-4)+'" text-anchor="middle" class="axis-label">'+d+'.</text>';
     }).join('');
-    var baseLine = '<line x1="'+pad+'" y1="'+(pad+plotH+0.5)+'" x2="'+(w-pad)+'" y2="'+(pad+plotH+0.5)+'" stroke="var(--border)" stroke-width="1"/>';
+    var baseLine = '<line x1="'+padSide+'" y1="'+(padTop+plotH+0.5)+'" x2="'+(w-padSide)+'" y2="'+(padTop+plotH+0.5)+'" stroke="var(--border)" stroke-width="1"/>';
 
-    var svg = '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">' + baseLine + bars + axisLabels + '</svg>';
+    var svg = '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">' + baseLine + bars + valueLabels + axisLabels + '</svg>';
     var unit = ex.type === "counter" ? "Wdh." : "kg × Wdh.";
     var title = ex.type === "counter" ? "Wiederholungen pro Tag" : "Volumen pro Tag";
 
