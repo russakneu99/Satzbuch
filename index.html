@@ -1044,20 +1044,30 @@
     b.addEventListener("click", function(){ setTab(b.dataset.tab); });
   });
 
-  function roundedRectPath(ctx, x, y, w, h, r){
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
   function setLinkIcon(rel, href){
     var link = document.querySelector('link[rel="'+rel+'"]');
     if (!link) { link = document.createElement("link"); link.rel = rel; document.head.appendChild(link); }
     link.href = href;
+  }
+
+  function drawFlexedArm(ctx, shoulder, elbow, fist, control, color){
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(shoulder.x, shoulder.y);
+    ctx.lineTo(elbow.x, elbow.y);
+    ctx.lineWidth = 72;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(elbow.x, elbow.y);
+    ctx.quadraticCurveTo(control.x, control.y, fist.x, fist.y);
+    ctx.lineWidth = 54;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(fist.x, fist.y, 34, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function generateAppIcon(){
@@ -1068,10 +1078,35 @@
       var ctx = canvas.getContext("2d");
       ctx.fillStyle = "#2F6690";
       ctx.fillRect(0, 0, size, size);
+
+      // torso
       ctx.fillStyle = "#FFFFFF";
-      roundedRectPath(ctx, 150, 241, 212, 30, 8); ctx.fill();
-      roundedRectPath(ctx, 92, 146, 56, 220, 14); ctx.fill();
-      roundedRectPath(ctx, 364, 146, 56, 220, 14); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(170, 225);
+      ctx.quadraticCurveTo(170, 205, 195, 205);
+      ctx.lineTo(317, 205);
+      ctx.quadraticCurveTo(342, 205, 342, 225);
+      ctx.lineTo(312, 340);
+      ctx.lineTo(200, 340);
+      ctx.closePath();
+      ctx.fill();
+
+      // left arm (white)
+      drawFlexedArm(ctx,
+        {x: 183, y: 218}, {x: 92, y: 235}, {x: 177, y: 115}, {x: 122, y: 170},
+        "#FFFFFF");
+
+      // right arm (accent highlight)
+      drawFlexedArm(ctx,
+        {x: 329, y: 218}, {x: 420, y: 235}, {x: 335, y: 115}, {x: 390, y: 170},
+        "#B34F29");
+
+      // head
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      ctx.ellipse(256, 150, 40, 46, 0, 0, Math.PI * 2);
+      ctx.fill();
+
       var url = canvas.toDataURL("image/png");
       setLinkIcon("apple-touch-icon", url);
       setLinkIcon("icon", url);
