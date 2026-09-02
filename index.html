@@ -364,10 +364,8 @@
     font-size: 12.5px; font-weight: 500; color: var(--muted); cursor: pointer; white-space: nowrap;
   }
   .type-toggle button.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 2px var(--shadow); }
-  .add-ex-btn {
-    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 10px;
-    padding: 0 16px; font-weight: 600; font-size: 20px; cursor: pointer;
-  }
+  .type-toggle.full { width: 100%; }
+  .type-toggle.full button { flex: 1; white-space: normal; line-height: 1.25; }
 
   .manage-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
   .manage-row .name { flex: 1; font-weight: 500; font-size: 14.5px; }
@@ -537,6 +535,7 @@
   var today = new Date();
   var statsMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   var manageType = "sets";
+  var newExDraftName = "";
 
   function setTab(t){
     tab = t;
@@ -817,12 +816,12 @@
   // ---------- MANAGE TAB ----------
   function renderManage(){
     var html = '<h2 class="section">Neue Übung</h2><div class="card" style="padding:12px;display:flex;flex-direction:column;gap:10px;">' +
-      '<div class="form-row"><input type="text" id="newExName" placeholder="Name, z.B. Kniebeuge"></div>' +
-      '<div style="display:flex;gap:8px;align-items:center;">' +
-      '<div class="type-toggle"><button data-mtype="sets" class="'+(manageType==='sets'?'active':'')+'">Sätze (Gewicht × Wdh.)</button>' +
+      '<div class="form-row"><input type="text" id="newExName" placeholder="Name, z.B. Kniebeuge" value="'+escapeHtml(newExDraftName)+'"></div>' +
+      '<div class="type-toggle full">' +
+      '<button data-mtype="sets" class="'+(manageType==='sets'?'active':'')+'">Sätze (Gewicht × Wdh.)</button>' +
       '<button data-mtype="counter" class="'+(manageType==='counter'?'active':'')+'">Zähler (gesamt)</button></div>' +
-      '<button class="add-ex-btn" id="addExBtn">'+ICONS.plus+'</button>' +
-      '</div></div>';
+      '<button class="save-btn" id="addExBtn">Hinzufügen</button>' +
+      '</div>';
 
     html += '<h2 class="section">Deine Übungen</h2><div class="card">';
     var list = state.exercises.filter(function(e){ return !e.archived; });
@@ -987,16 +986,18 @@
     });
 
     // manage
+    var newExNameInput = document.getElementById("newExName");
+    if (newExNameInput) newExNameInput.addEventListener("input", function(){ newExDraftName = newExNameInput.value; });
     document.querySelectorAll("[data-mtype]").forEach(function(b){
       b.addEventListener("click", function(){ manageType = b.dataset.mtype; render(); });
     });
     var addExBtn = document.getElementById("addExBtn");
     if (addExBtn) addExBtn.addEventListener("click", function(){
-      var input = document.getElementById("newExName");
-      var name = input.value.trim();
+      var name = newExDraftName.trim();
       if (!name) { toast("Bitte einen Namen eingeben"); return; }
       state.exercises.push({id: uid(), name: name, type: manageType, favorite: false, archived: false});
       save();
+      newExDraftName = "";
       toast("Übung hinzugefügt");
       render();
     });
